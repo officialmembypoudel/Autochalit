@@ -1,6 +1,11 @@
 import { registerRootComponent } from 'expo';
-import { ThemeProvider, Button, createTheme, Text, Image, Avatar, Switch, lightColors, useThemeMode } from '@rneui/themed';
-import { Platform, SafeAreaView, View } from 'react-native';
+import { ThemeProvider, Button, createTheme } from '@rneui/themed';
+import { View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AllLights from './context/lightsContext';
+import { StatusBar } from 'expo-status-bar';
+import StackNavigator from './navigation/StackNavigator';
+import TheAuthContext from './context/authContext';
 import {
   useFonts,
   OpenSans_300Light,
@@ -16,11 +21,6 @@ import {
   OpenSans_800ExtraBold,
   OpenSans_800ExtraBold_Italic
 } from '@expo-google-fonts/open-sans'
-import { useEffect, useState } from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import HomeScreen from './Screens/HomeScreen';
-import AllLights from './context/lightsContext';
-import { StatusBar } from 'expo-status-bar';
 
 
 
@@ -39,7 +39,7 @@ const theme = createTheme({
 
 });
 
-// Your App
+// My App
 export default function App() {
   let [fontsLoaded] = useFonts({
     OpenSans_300Light,
@@ -71,9 +71,11 @@ export default function App() {
       <SafeAreaProvider>
         <ThemeProvider theme={theme}>
           <StatusBar style='auto' />
-          <AllLights>
-            <HomeScreen />
-          </AllLights>
+          <TheAuthContext>
+            <AllLights>
+              <StackNavigator />
+            </AllLights>
+          </TheAuthContext>
         </ThemeProvider>
       </SafeAreaProvider>
     );

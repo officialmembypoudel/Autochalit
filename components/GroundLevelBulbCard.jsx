@@ -7,7 +7,7 @@ import { LightsContext } from "../context/lightsContext";
 import { axiosInstance } from "../configs/axiosConfig";
 import { client, database } from "../configs/appwriteConfig";
 
-const BulbControlCard = ({
+const GroundLevelBulbCard = ({
   offColor,
   onColor,
   uuid,
@@ -119,4 +119,4 @@ const BulbControlCard = ({
   );
 };
 
-export default BulbControlCard;
+export default GroundLevelBulbCard;

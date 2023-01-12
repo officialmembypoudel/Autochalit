@@ -1,0 +1,37 @@
+diff --git a/node_modules/appwrite/dist/cjs/sdk.js b/node_modules/appwrite/dist/cjs/sdk.js
+index 4f02224..0824d9b 100644
+--- a/node_modules/appwrite/dist/cjs/sdk.js
++++ b/node_modules/appwrite/dist/cjs/sdk.js
+@@ -178,7 +178,7 @@ class Client {
+                     this.realtime.lastMessage = message;
+                     switch (message.type) {
+                         case 'connected':
+-                            const cookie = JSON.parse((_a = window.localStorage.getItem('cookieFallback')) !== null && _a !== void 0 ? _a : '{}');
++                            const cookie = null !== null && _a !== void 0 ? _a : '{}';
+                             const session = cookie === null || cookie === void 0 ? void 0 : cookie[`a_session_${this.config.project}`];
+                             const messageData = message.data;
+                             if (session && !messageData.user) {
+@@ -343,7 +343,7 @@ class Client {
+                 credentials: 'include'
+             };
+             if (typeof window !== 'undefined' && window.localStorage) {
+-                headers['X-Fallback-Cookies'] = (_a = window.localStorage.getItem('cookieFallback')) !== null && _a !== void 0 ? _a : '';
++                headers['X-Fallback-Cookies'] = null !== null && _a !== void 0 ? _a : '';
+             }
+             if (method === 'GET') {
+                 for (const [key, value] of Object.entries(Service.flatten(params))) {
+@@ -387,10 +387,10 @@ class Client {
+                     throw new AppwriteException(data === null || data === void 0 ? void 0 : data.message, response.status, data === null || data === void 0 ? void 0 : data.type, data);
+                 }
+                 const cookieFallback = response.headers.get('X-Fallback-Cookies');
+-                if (typeof window !== 'undefined' && window.localStorage && cookieFallback) {
+-                    window.console.warn('Appwrite is using localStorage for session management. Increase your security by adding a custom domain as your API endpoint.');
+-                    window.localStorage.setItem('cookieFallback', cookieFallback);
+-                }
++                // if (typeof window !== 'undefined' && window.localStorage && cookieFallback) {
++                //     window.console.warn('Appwrite is using localStorage for session management. Increase your security by adding a custom domain as your API endpoint.');
++                //     window.localStorage.setItem('cookieFallback', cookieFallback);
++                // }
+                 return data;
+             }
+             catch (e) {

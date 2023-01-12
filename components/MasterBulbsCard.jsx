@@ -3,6 +3,7 @@ import React, { useContext, useEffect } from "react";
 import { Card, Image, Text } from "@rneui/themed";
 import { Icon } from "@rneui/base";
 import { LightsContext } from "../context/lightsContext";
+import { client, database } from "../configs/appwriteConfig";
 
 const MasterBulbsCard = ({
   footerBlock,
@@ -18,15 +19,61 @@ const MasterBulbsCard = ({
   const { allLightsOn, setAllLightsOn } = useContext(LightsContext);
 
   const handleMasterControl = () => {
-    setAllLightsOn(!allLightsOn);
-    if (allLights.length) {
-      let newarray = allLights;
-      let newState = newarray.map((light) => {
-        return { ...light, lit: !allLightsOn };
-      });
-      setAllLights(newState);
-    }
+    const promise = database.updateDocument(
+      "autochalid",
+      "appliances",
+      "allLights",
+      { state: !allLightsOn }
+    );
+
+    promise.then(
+      function (response) {
+        console.log(`All lights is ${response.state}`);
+        setAllLightsOn(response.state);
+        // if (response.state === false) {
+        const groundLight = database.updateDocument(
+          "autochalid",
+          "appliances",
+          "groundLight",
+          { state: response.state }
+        );
+        groundLight.then(
+          function () {},
+          function (error) {
+            console.log(error);
+          }
+        );
+        const level1Light = database.updateDocument(
+          "autochalid",
+          "appliances",
+          "level1Light",
+          { state: response.state }
+        );
+        level1Light.then(
+          function () {},
+          function (error) {
+            console.log(error);
+          }
+        );
+      },
+      // },
+      function (error) {
+        console.log(error);
+      }
+    );
   };
+
+  // useEffect(() => {
+  //   const unsuscribe = client.subscribe(
+  //     "databases.autochalid.collections.appliances.documents.allLights",
+  //     (response) => {
+  //       console.log(response.payload.name);
+  //       setAllLightsOn(response.payload.state);
+  //     }
+  //   );
+  //   console.log("all lights master realtime suscribe");
+  //   return () => unsuscribe();
+  // }, []);
 
   return (
     <TouchableOpacity

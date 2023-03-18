@@ -1,109 +1,111 @@
 import { TouchableOpacity, View } from "react-native";
 import React, { useContext, useEffect, useState } from "react";
 import { Card, Image, Text } from "@rneui/themed";
-import lightOff from "../assets/images/bulb-off.png";
-import lightOn from "../assets/images/bulb-on.png";
-import { LightsContext } from "../context/lightsContext";
+import tvOff from "../assets/images/tv-off.png";
+import powerOn from "../assets/images/power-on.png";
 import { axiosInstance } from "../configs/axiosConfig";
 import { client, database } from "../configs/appwriteConfig";
 import Loaders from "./Loaders";
 import { AuthContext } from "../context/authContext";
 
-const GroundLevelBulbCard = ({ offColor, onColor, topic }) => {
+const PowerSocketCard = () => {
   const { refreshing, setRefreshing, setError } = useContext(AuthContext);
-  const { setReloader, reloader, loading } = useContext(LightsContext);
-  const [isLightOn, setIsLightOn] = useState(false);
-  const [lightState, setLightState] = useState(false);
-  const [loadingGround, setLoadingGround] = useState(true);
+  const [isPowerOn, setIsPowerOn] = useState(false);
+  const [powerFromCloud, setPowerFromCloud] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const bulbControl = () => {
-    setLoadingGround(true);
-    const promise = database.updateDocument("autochalid", "appliances", topic, {
-      state: !isLightOn,
-    });
-
+  const handleTVCardClick = () => {
+    setLoading(true);
+    const promise = database.updateDocument(
+      "autochalid",
+      "appliances",
+      "level1PS",
+      {
+        state: !isPowerOn,
+      }
+    );
     promise.then(
       function (response) {
-        // console.log(`${topic} is ${response.state}`);
+        // console.log(`Fan is ${response.state}`);
       },
       function (error) {
         setError(error);
-        setLoadingGround(false);
+        setLoading(false);
       }
     );
   };
-
   useEffect(() => {
-    const promise = database.getDocument("autochalid", "appliances", topic);
+    const promise = database.getDocument(
+      "autochalid",
+      "appliances",
+      "level1PS"
+    );
+
     promise.then(
       function (response) {
-        setLightState(response.state);
+        setPowerFromCloud(response.state);
       },
       function (error) {
         setError(error);
       }
     );
   }, [refreshing]);
-
   useEffect(() => {
     const unsuscribe = client.subscribe(
-      `databases.autochalid.collections.appliances.documents.${topic}`,
+      "databases.autochalid.collections.appliances.documents.level1PS",
       (response) => {
-        // console.log(response.payload.$updatedAt, "assdfghjkhgfdg");
-        setLightState(response.payload.state);
-        setReloader(response.payload.$updatedAt);
+        setPowerFromCloud(response.payload.state);
       }
     );
-    console.log(`${topic} realtime suscribe`, reloader);
+    // console.log("fan realtime suscribe");
     return () => unsuscribe();
   }, []);
 
   useEffect(() => {
-    const lightMqtt = () => {
+    const fanMqtt = () => {
       axiosInstance
         .get("/mqtt", {
           params: {
-            topic,
-            message: lightState ? "on" : "off",
+            topic: "powerSocket",
+            message: powerFromCloud ? "on" : "off",
           },
         })
         .then(function (response) {
           if (response.status === 200) {
-            setIsLightOn(lightState);
-            setLoadingGround(false);
+            setIsPowerOn(powerFromCloud);
+            setLoading(false);
           }
         })
         .catch(function (error) {
           setError(error);
         });
     };
-    lightMqtt();
-  }, [lightState, refreshing]);
-
+    fanMqtt();
+  }, [powerFromCloud]);
   return (
     <TouchableOpacity
       style={{
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor:
-          lightState && !loading && !loadingGround ? onColor : "grey",
+        backgroundColor: isPowerOn && !loading ? "#ffbf69" : "grey",
         paddingHorizontal: 15,
         paddingVertical: 10,
         borderRadius: 20,
         elevation: 3,
+        marginTop: 20,
       }}
-      onPress={(!loadingGround || !loading) && bulbControl}
-      disabled={loadingGround || loading}
+      onPress={!loading && handleTVCardClick}
+      disabled={loading}
     >
       <Image
         resizeMode="contain"
-        source={lightState && !loading && !loadingGround ? lightOn : lightOff}
+        source={isPowerOn && !loading ? powerOn : powerOn}
         style={{ width: 50, height: 50 }}
       />
       <View>
-        {loadingGround || (loading && <Loaders />)}
-        {!loadingGround && !loading && (
+        {loading && <Loaders />}
+        {!loading && (
           <>
             <Text
               h4
@@ -114,10 +116,10 @@ const GroundLevelBulbCard = ({ offColor, onColor, topic }) => {
                 textAlign: "right",
               }}
             >
-              {lightState ? "Lights On" : "Lights Off"}
+              {isPowerOn ? "Power Socket On" : "Power Socket Off"}
             </Text>
             <Text style={{ fontFamily: "OpenSans_300Light" }}>
-              Tap to toogle lights
+              Tap to toogle Power Socket
             </Text>
           </>
         )}
@@ -126,4 +128,4 @@ const GroundLevelBulbCard = ({ offColor, onColor, topic }) => {
   );
 };
 
-export default GroundLevelBulbCard;
+export default PowerSocketCard;

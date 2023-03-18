@@ -1,5 +1,5 @@
-import { SafeAreaView, ScrollView, View } from "react-native";
-import React, { useContext, useEffect, useState } from "react";
+import { RefreshControl, SafeAreaView, ScrollView, View } from "react-native";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import {
   Avatar,
   Button,
@@ -9,43 +9,36 @@ import {
   useThemeMode,
 } from "@rneui/themed";
 import ganesh from "../assets/images/headshot.jpg";
-import ModeToggler from "../components/ModeToggler";
 import MasterBulbsCard from "../components/MasterBulbsCard";
 import bulbOff from "../assets/images/bulb-off.png";
 import bulbOn from "../assets/images/bulb-on.png";
 import lockOff from "../assets/images/lock-off.png";
 import BulbControlCard from "../components/BulbControlCard";
 import FanControlCard from "../components/FanControlCard";
-import TvControlCard from "../components/TvControlCard";
+import TvControlCard from "../components/PowerSocketCard";
 import DoorControl from "../components/DoorControl";
 import { LightsContext } from "../context/lightsContext";
 import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
 import { AuthContext } from "../context/authContext";
 import GroundLevelBulbCard from "../components/GroundLevelBulbCard";
+import GetPutErrorModal from "../components/alerts/GetPutErrorModal";
+import { getFirstNameFromFullName } from "../helperFunctions";
+import PowerSocketCard from "../components/PowerSocketCard";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const { allLightsOn, setAllLightsOn } = useContext(LightsContext);
-  const { user } = useContext(AuthContext);
+  const { user, refreshing, setRefreshing } = useContext(AuthContext);
   const { mode, setMode } = useThemeMode();
   const { theme } = useTheme();
-  const [groundLights, setGroundLights] = useState(false);
-  const [allLights, setAllLights] = useState([
-    { uuid: 1, lit: false },
-    { uuid: 2, lit: false },
-  ]);
 
-  useEffect(() => {
-    let allBulbs = allLights.length;
-    let litChecker = allLights.filter((light) => light.lit === true).length;
-    if (allBulbs > 1 && litChecker > 1 && allBulbs === litChecker) {
-      setAllLightsOn(true);
-    } else {
-      setAllLightsOn(false);
-    }
-  }, [allLights]);
-  console.log(user);
+  const refreshControl = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 2000);
+  });
+
   return (
     <>
       {!user?.name && (
@@ -86,11 +79,11 @@ const HomeScreen = () => {
               <Text
                 h3
                 h3Style={{
-                  fontFamily: "OpenSans_800ExtraBold",
-                  fontWeight: "800",
+                  fontFamily: "OpenSans_700Bold",
+                  fontWeight: "600",
                 }}
               >
-                {`Welcome, ${user?.name}!`}
+                {`Welcome, ${getFirstNameFromFullName(user?.name)}!`}
               </Text>
               {/* <ModeToggler /> */}
 
@@ -126,6 +119,12 @@ const HomeScreen = () => {
               showsVerticalScrollIndicator={false}
               overScrollMode="never"
               contentContainerStyle={{ paddingBottom: 30 }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={refreshControl}
+                />
+              }
             >
               <View
                 style={{
@@ -140,8 +139,6 @@ const HomeScreen = () => {
                   offColor="rgb(52, 58, 64)"
                   onColor="#74c69d"
                   onPicture={bulbOn}
-                  allLights={allLights}
-                  setAllLights={setAllLights}
                 />
                 <DoorControl
                   footerBlock="Locked"
@@ -173,14 +170,8 @@ const HomeScreen = () => {
                   Ground Floor
                 </Text>
                 <View>
-                  <GroundLevelBulbCard
-                    uuid={1}
-                    onColor="#74c69d"
-                    allLights={allLights}
-                    setAllLights={setAllLights}
-                    topic="groundLight"
-                  />
-                  <FanControlCard />
+                  <GroundLevelBulbCard onColor="#74c69d" topic="groundLight" />
+                  {/* <PowerSocketCard /> */}
                 </View>
               </Card>
               <Card
@@ -205,14 +196,8 @@ const HomeScreen = () => {
                   Level 1
                 </Text>
                 <View>
-                  <BulbControlCard
-                    uuid={2}
-                    onColor="#74c69d"
-                    allLights={allLights}
-                    setAllLights={setAllLights}
-                    topic="level1Light"
-                  />
-                  <TvControlCard />
+                  <BulbControlCard onColor="#74c69d" topic="level1Light" />
+                  <PowerSocketCard />
                 </View>
               </Card>
 
@@ -224,7 +209,7 @@ const HomeScreen = () => {
                   marginTop: 50,
                 }}
               >
-                Powered by Autochalit v4
+                Powered by Autochalit v9
               </Text>
               <Text
                 style={{
@@ -238,6 +223,7 @@ const HomeScreen = () => {
               </Text>
             </ScrollView>
           </View>
+          <GetPutErrorModal />
         </>
       )}
     </>

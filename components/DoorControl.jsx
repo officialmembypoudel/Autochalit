@@ -1,11 +1,12 @@
 import { TouchableOpacity, View } from "react-native";
 import React, { useContext, useEffect, useState } from "react";
-import { Card, Image, Text } from "@rneui/themed";
+import { Button, Card, Image, Text } from "@rneui/themed";
 import { Icon } from "@rneui/base";
 import { LightsContext } from "../context/lightsContext";
 import unlockedPNG from "../assets/images/unlocked.png";
 import { axiosInstance } from "../configs/axiosConfig";
 import { client, database } from "../configs/appwriteConfig";
+import { AuthContext } from "../context/authContext";
 
 const DoorControl = ({
   footerBlock,
@@ -15,10 +16,13 @@ const DoorControl = ({
   onColor,
   offColor,
 }) => {
+  const { refreshing, setRefreshing, setError } = useContext(AuthContext);
   const [isDoorOpen, setIsDoorOpen] = useState(false);
   const [doorFromCloud, setDoorFromCloud] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const handleDoorCardClick = () => {
+    setLoading(true);
     const promise = database.updateDocument(
       "autochalid",
       "appliances",
@@ -31,7 +35,9 @@ const DoorControl = ({
         console.log("door is", response.state);
       },
       function (error) {
-        console.log(error);
+        // console.log(error);
+        setError(error);
+        setLoading(false);
       }
     );
   };
@@ -48,10 +54,11 @@ const DoorControl = ({
         setDoorFromCloud(response.state);
       },
       function (error) {
-        console.log(error);
+        // console.log(error);
+        setError(error);
       }
     );
-  }, []);
+  }, [refreshing]);
 
   useEffect(() => {
     const unsuscribe = client.subscribe(
@@ -61,7 +68,7 @@ const DoorControl = ({
         setDoorFromCloud(response.payload.state);
       }
     );
-    console.log("door realtime suscribe");
+    // console.log("door realtime suscribe");
     return () => unsuscribe();
   }, []);
 
@@ -72,17 +79,20 @@ const DoorControl = ({
           params: { topic: "door", message: doorFromCloud ? "on" : "off" },
         })
         .then(function (response) {
-          console.log(response);
+          // console.log(response);
           if (response.status === 200) {
             setIsDoorOpen(doorFromCloud);
+            setLoading(false);
           }
         })
         .catch(function (error) {
-          console.log(error);
+          // console.log(error);
+          setError(error);
         });
     };
     doorMqtt();
   }, [doorFromCloud]);
+
   return (
     <TouchableOpacity
       style={{
@@ -93,6 +103,7 @@ const DoorControl = ({
         borderRadius: 21,
       }}
       onPress={handleDoorCardClick}
+      disabled={loading}
     >
       <Card
         containerStyle={{
@@ -129,26 +140,38 @@ const DoorControl = ({
             }}
           />
         </View>
-        <Text
-          style={{
-            fontFamily: "OpenSans_300Light",
-            color: "#6c757d",
-            textAlign: "center",
-          }}
-        >
-          {footerLight}
-        </Text>
-        <Text
-          h4
-          h4Style={{
-            fontFamily: "OpenSans_600SemiBold",
-            fontWeight: "600",
-            color: "#6c757d",
-            textAlign: "center",
-          }}
-        >
-          {doorFromCloud ? "Door Open" : footerBlock}
-        </Text>
+        {loading && (
+          <Button
+            loading
+            size="md"
+            loadingProps={{ size: "large" }}
+            type="clear"
+          />
+        )}
+        {!loading && (
+          <>
+            <Text
+              style={{
+                fontFamily: "OpenSans_300Light",
+                color: "#6c757d",
+                textAlign: "center",
+              }}
+            >
+              {footerLight}
+            </Text>
+            <Text
+              h4
+              h4Style={{
+                fontFamily: "OpenSans_600SemiBold",
+                fontWeight: "600",
+                color: "#6c757d",
+                textAlign: "center",
+              }}
+            >
+              {doorFromCloud ? "Door Open" : footerBlock}
+            </Text>
+          </>
+        )}
       </Card>
     </TouchableOpacity>
   );

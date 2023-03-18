@@ -1,18 +1,23 @@
 import { TouchableOpacity, View } from "react-native";
-import React, { useEffect, useState } from "react";
-import { Card, Image, Text } from "@rneui/themed";
+import React, { useContext, useEffect, useState } from "react";
+import { Button, Card, Image, Text } from "@rneui/themed";
 import fanOff from "../assets/images/fan-off.png";
-import fanOn from "../assets/images/fan-on.png";
+import fanOn from "../assets/images/power-on.png";
 import { axiosInstance } from "../configs/axiosConfig";
 import { Client } from "appwrite";
 import { database } from "../configs/appwriteConfig";
+import { AuthContext } from "../context/authContext";
 // import { client } from "../configs/appwriteConfig";
 
 const FanControlCard = () => {
+  const { refreshing, setRefreshing, setError } = useContext(AuthContext);
+
   const [isFanOn, setIsFanOn] = useState(false);
   const [fanFromCloud, setFanFromCloud] = useState();
+  const [loading, setLoading] = useState(true);
 
   const handleFanCardClick = () => {
+    setLoading(true);
     const promise = database.updateDocument(
       "autochalid",
       "appliances",
@@ -25,7 +30,9 @@ const FanControlCard = () => {
         console.log(`fan is ${response.state}`);
       },
       function (error) {
-        console.log(error);
+        setError(error);
+        setLoading(false);
+        // console.log(error.message);
       }
     );
   };
@@ -58,28 +65,28 @@ const FanControlCard = () => {
         setFanFromCloud(response.state);
       },
       function (error) {
-        console.log(error);
+        setError(error);
       }
     );
-  }, []);
+  }, [refreshing]);
 
   useEffect(() => {
     const fanMqtt = () => {
       axiosInstance
         .get("/mqtt", {
           params: {
-            topic: "fan",
-            message: fanFromCloud ? "on" : "off",
+            topic: "powerSocket",
+            message: !isFanOn ? "on" : "off",
           },
         })
         .then(function (response) {
           if (response.status === 200) {
             setIsFanOn(fanFromCloud);
-            console.log("mfklweegrydug");
+            setLoading(false);
           }
         })
         .catch(function (error) {
-          console.log(error);
+          setError(error);
         });
     };
     fanMqtt();
@@ -92,7 +99,7 @@ const FanControlCard = () => {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor: isFanOn ? "#ccdbfd" : "grey",
+        backgroundColor: isFanOn ? "#4a8fe7" : "grey",
         paddingHorizontal: 15,
         paddingVertical: 10,
         borderRadius: 20,
@@ -100,6 +107,7 @@ const FanControlCard = () => {
         marginTop: 20,
       }}
       onPress={handleFanCardClick}
+      disabled={loading}
     >
       <Image
         resizeMode="contain"
@@ -107,20 +115,32 @@ const FanControlCard = () => {
         style={{ width: 50, height: 50 }}
       />
       <View>
-        <Text
-          h4
-          h4Style={{
-            fontFamily: "OpenSans_500Medium",
-            fontWeight: "500",
-            fontSize: 18,
-            textAlign: "right",
-          }}
-        >
-          {isFanOn ? "Fan On" : "Fan Off"}
-        </Text>
-        <Text style={{ fontFamily: "OpenSans_300Light" }}>
-          Tap to toogle Fan
-        </Text>
+        {loading && (
+          <Button
+            loading
+            size="md"
+            loadingProps={{ size: "large" }}
+            type="clear"
+          />
+        )}
+        {!loading && (
+          <>
+            <Text
+              h4
+              h4Style={{
+                fontFamily: "OpenSans_500Medium",
+                fontWeight: "500",
+                fontSize: 18,
+                textAlign: "right",
+              }}
+            >
+              {isFanOn ? "Power Socket On" : "Power Socket Off"}
+            </Text>
+            <Text style={{ fontFamily: "OpenSans_300Light" }}>
+              Tap to toogle Power Socket
+            </Text>
+          </>
+        )}
       </View>
     </TouchableOpacity>
   );

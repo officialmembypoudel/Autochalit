@@ -14,6 +14,7 @@ import userImg from "../assets/images/headshot.jpg";
 import { Button } from "@rneui/base";
 import NetInfo from "@react-native-community/netinfo";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SettingScreen = () => {
   const navigation = useNavigation();
@@ -26,10 +27,17 @@ const SettingScreen = () => {
   useEffect(() => {
     const unsuscribe = NetInfo.addEventListener((state) => {
       setConnection(state);
+      // console.log(state);
     });
-    unsuscribe();
-  }, [connection.type]);
+    // unsuscribe();
+  }, []);
   // console.log
+
+  const handleModeChange = async (mode) => {
+    try {
+      await AsyncStorage.setItem("@mode", mode);
+    } catch (error) {}
+  };
 
   return (
     <ScrollView
@@ -191,16 +199,24 @@ const SettingScreen = () => {
         >
           <Button
             title="off"
+            titleStyle={{ fontFamily: "OpenSans_500Medium" }}
             type={mode === "dark" ? "clear" : "solid"}
             color="primary"
-            onPress={() => setMode("light")}
+            onPress={() => {
+              handleModeChange("light");
+              setMode("light");
+            }}
             buttonStyle={{ borderRadius: 10, padding: 3, margin: 0 }}
           />
           <Button
             title="on"
             type={mode === "light" ? "clear" : "solid"}
+            titleStyle={{ fontFamily: "OpenSans_500Medium" }}
             color="success"
-            onPress={() => setMode("dark")}
+            onPress={() => {
+              handleModeChange("dark");
+              setMode("dark");
+            }}
             buttonStyle={{ borderRadius: 10, padding: 3, margin: 0 }}
           />
         </View>
@@ -213,7 +229,9 @@ const SettingScreen = () => {
         }}
       >
         <Icon
-          name={connection?.type}
+          name={
+            connection?.type !== "none" ? connection?.type : "cloud-offline"
+          }
           type="ionicon"
           style={{ marginRight: 10 }}
           size={20}
@@ -225,7 +243,9 @@ const SettingScreen = () => {
             // marginTop: 20,
           }}
         >
-          {`Connected to ${connection?.type}`}
+          {connection.type !== "none"
+            ? `Connected to ${connection?.type}`
+            : "No connection"}
         </Text>
       </View>
 

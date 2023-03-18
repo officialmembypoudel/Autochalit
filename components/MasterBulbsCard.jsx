@@ -4,6 +4,9 @@ import { Card, Image, Text } from "@rneui/themed";
 import { Icon } from "@rneui/base";
 import { LightsContext } from "../context/lightsContext";
 import { client, database } from "../configs/appwriteConfig";
+import Loaders from "./Loaders";
+import { Query } from "appwrite";
+import { AuthContext } from "../context/authContext";
 
 const MasterBulbsCard = ({
   footerBlock,
@@ -13,12 +16,13 @@ const MasterBulbsCard = ({
   onColor,
   offColor,
   onPicture,
-  allLights,
-  setAllLights,
 }) => {
-  const { allLightsOn, setAllLightsOn } = useContext(LightsContext);
+  const { allLightsOn, setAllLightsOn, loading, setLoading, reloader } =
+    useContext(LightsContext);
+  const { setError } = useContext(AuthContext);
 
   const handleMasterControl = () => {
+    setLoading(true);
     const promise = database.updateDocument(
       "autochalid",
       "appliances",
@@ -40,7 +44,8 @@ const MasterBulbsCard = ({
         groundLight.then(
           function () {},
           function (error) {
-            console.log(error);
+            setError(error);
+            setLoading(false);
           }
         );
         const level1Light = database.updateDocument(
@@ -52,28 +57,18 @@ const MasterBulbsCard = ({
         level1Light.then(
           function () {},
           function (error) {
-            console.log(error);
+            setError(error);
+            setLoading(false);
           }
         );
       },
       // },
       function (error) {
-        console.log(error);
+        setError(error);
+        setLoading(false);
       }
     );
   };
-
-  // useEffect(() => {
-  //   const unsuscribe = client.subscribe(
-  //     "databases.autochalid.collections.appliances.documents.allLights",
-  //     (response) => {
-  //       console.log(response.payload.name);
-  //       setAllLightsOn(response.payload.state);
-  //     }
-  //   );
-  //   console.log("all lights master realtime suscribe");
-  //   return () => unsuscribe();
-  // }, []);
 
   return (
     <TouchableOpacity
@@ -84,7 +79,8 @@ const MasterBulbsCard = ({
         marginVertical: 20,
         borderRadius: 21,
       }}
-      onPress={handleMasterControl}
+      onPress={!loading && handleMasterControl}
+      disabled={loading}
     >
       <Card
         containerStyle={{
@@ -92,7 +88,7 @@ const MasterBulbsCard = ({
           borderWidth: 0,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: allLightsOn ? onColor : offColor,
+          backgroundColor: allLightsOn && !loading ? onColor : offColor,
           borderRadius: 20,
           margin: 0,
           position: "relative",
@@ -106,14 +102,17 @@ const MasterBulbsCard = ({
             right: -15,
           }}
         >
-          <Icon name="circle" color={allLightsOn ? "green" : "#dc3545"} />
+          <Icon
+            name="circle"
+            color={allLightsOn && !loading ? "green" : "#dc3545"}
+          />
         </View>
         <View
           style={{ alignItems: "center", marginVertical: 40, marginBottom: 30 }}
         >
           <Image
             resizeMode="contain"
-            source={allLightsOn ? onPicture : picture}
+            source={allLightsOn && !loading ? onPicture : picture}
             style={{
               width: 130,
               height: 130,
@@ -121,26 +120,31 @@ const MasterBulbsCard = ({
             }}
           />
         </View>
-        <Text
-          style={{
-            fontFamily: "OpenSans_300Light",
-            color: "#6c757d",
-            textAlign: "center",
-          }}
-        >
-          {footerLight}
-        </Text>
-        <Text
-          h4
-          h4Style={{
-            fontFamily: "OpenSans_600SemiBold",
-            fontWeight: "600",
-            color: "#6c757d",
-            textAlign: "center",
-          }}
-        >
-          {allLightsOn ? "Lights On" : footerBlock}
-        </Text>
+        {loading && <Loaders />}
+        {!loading && (
+          <>
+            <Text
+              style={{
+                fontFamily: "OpenSans_300Light",
+                color: "#6c757d",
+                textAlign: "center",
+              }}
+            >
+              {footerLight}
+            </Text>
+            <Text
+              h4
+              h4Style={{
+                fontFamily: "OpenSans_600SemiBold",
+                fontWeight: "600",
+                color: "#6c757d",
+                textAlign: "center",
+              }}
+            >
+              {allLightsOn ? "Lights On" : footerBlock}
+            </Text>
+          </>
+        )}
       </Card>
     </TouchableOpacity>
   );

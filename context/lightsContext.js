@@ -3,14 +3,16 @@ import React, { Children, createContext, useContext, useEffect, useState } from 
 import { axiosInstance } from '../configs/axiosConfig'
 import { client, database } from '../configs/appwriteConfig'
 import { Query } from 'appwrite'
+import { AuthContext } from './authContext'
 
 export const LightsContext = createContext()
 const AllLights = ({ children }) => {
-    const [allLightsOn, setAllLightsOn] = useState(false)
+    const { refreshing, setRefreshing, setError } = useContext(AuthContext)
+    const [allLightsOn, setAllLightsOn] = useState(null)
     const [allLights, setAllLights] = useState([])
     const [allLightsFromCloud, setAllLightsFromCloud] = useState()
     const [reloader, setReloader] = useState()
-    const [singleLight, setSingleLight] = useState()
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const promise = database.listDocuments('autochalid', 'appliances', [
@@ -19,51 +21,63 @@ const AllLights = ({ children }) => {
 
         promise.then(function (response) {
             setAllLightsOn(response.documents.every(light => light.state === true))
-            console.log('running from light context', response.documents.every(light => light.state === true))
+
+            // console.log('running from light context', response.documents.every(light => light.state === true))
         }, function (error) {
-            console.log(error)
+            setError(error)
+
         })
 
-    }, [reloader])
+    }, [reloader, refreshing])
 
     useEffect(() => {
-        const promise = database.updateDocument('autochalid', 'appliances', 'allLights', { state: allLightsOn })
+        if (allLightsOn !== null) {
+            const promise = database.updateDocument('autochalid', 'appliances', 'allLights', { state: allLightsOn })
 
-        promise.then(function (response) {
-            // setAllLightsOn(response.documents.every(light=> light.state===true))
-        }, function (error) {
-            console.log(error)
-        })
+            promise.then(function (response) {
+                // setAllLightsOn(response.documents.every(light=> light.state===true))
+            }, function (error) {
+                setError(error)
+
+            })
+        }
     }, [reloader, allLightsOn])
 
     useEffect(() => {
         const promise = database.getDocument('autochalid', 'appliances', 'allLights')
         promise.then(function (response) {
-            setAllLights(response.state)
+            setAllLightsOn(response.state)
         }, function (error) {
-            console.log(error)
+            setError(error)
+
         })
 
-    }, [])
+    }, [refreshing])
 
     useEffect(() => {
-        const alllightsMqtt = () => {
-            axiosInstance.get('/mqtt', {
-                params: {
-                    topic: 'allLights',
-                    message: allLightsOn ? 'on' : 'off'
-                }
-            }).then(function (response) {
-                // console.log(response)
-            }).catch(function (error) {
-                // console.log(error)
-            })
+        if (allLightsOn !== null) {
+            const alllightsMqtt = () => {
+                setLoading(true)
+                axiosInstance.get('/mqtt', {
+                    params: {
+                        topic: 'allLights',
+                        message: allLightsOn ? 'on' : 'off'
+                    }
+                }).then(function (response) {
+                    // console.log(response)
+                    setLoading(false)
+                }).catch(function (error) {
+                    setError(error)
+
+                })
+            }
+            alllightsMqtt()
         }
-        alllightsMqtt()
-    }, [allLightsOn])
+    }, [allLightsOn, refreshing])
+
 
     return (
-        <LightsContext.Provider value={{ allLightsOn, setAllLightsOn, setReloader, allLightsFromCloud, reloader, setAllLights }}>
+        <LightsContext.Provider value={{ allLightsOn, setAllLightsOn, setReloader, allLightsFromCloud, reloader, setAllLights, setLoading, loading }}>
             {children}
         </LightsContext.Provider>
     )

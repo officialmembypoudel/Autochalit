@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@expo-google-fonts/open-sans": "^0.2.2",
@@ -20,6 +21,7 @@
     "axios": "^1.2.2",
     "expo": "~47.0.6",
     "expo-blur": "~12.0.1",
+    "expo-image-picker": "~14.0.2",
     "expo-status-bar": "~1.4.2",
     "expo-updates": "^0.15.6",
     "react": "18.1.0",
